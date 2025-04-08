@@ -25,3 +25,13 @@ export const registerSchema = z
     path: ["confirmPassword"], // Алдааг баталгаажуулах нууц үгийн талбарт хамааруулна
   });
 
+export const itemSchema = z.object({
+  name: z.string().min(1, { message: "Нэр оруулна уу" }),
+  description: z.string().min(1, { message: "Тайлбар оруулна уу" }),
+  price: z
+    .number()
+    .min(0, { message: "Үнэ 0-ээс их байх ёстой" })
+    .max(1000000, { message: "Үнэ 1000000-ээс бага байх ёстой" }),
+  images: z.array(z.instanceof(File)).min(1, { message: "Зураг оруулна уу" }),
+  game: z.string().min(1, { message: "Тоглоом сонгоно уу" }),
+});

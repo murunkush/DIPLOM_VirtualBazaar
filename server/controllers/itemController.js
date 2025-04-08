@@ -1,30 +1,20 @@
 const asyncHandler = require('express-async-handler');
 const Item = require('../models/itemModel');
-const multer = require('multer');  // Multer импортлох
-
-// Multer storage config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');  // upload folder
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
-  }
-});
-const upload = multer({ storage }); // Multer ачаалал үүсгэх
 
 // ✅ Шинэ бараа нэмэх
 const createItem = asyncHandler(async (req, res) => {
-  const { name, description, price, game, seller } = req.body;
+  const { name, description, price, game } = req.body;
 
-  if (!name || !game || !price || !seller) {
+  if (!name || !game || !price) {
     res.status(400);
+    res.json({ message: 'Бүх талбарыг бөглөнө үү' });
     throw new Error('Бүх талбарыг бөглөнө үү');
   }
 
+  const seller = req.user._id;
+
   // Зурагнуудаас массив үүсгэх
-  const imageUrls = req.files.map(file => file.path); // Multer-аас imageUrls үүсгэж авах
+  const imageUrls = req.files?.map(file => file.path) || ['']; // Multer-аас imageUrls үүсгэж авах
 
   try {
     const item = await Item.create({

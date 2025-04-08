@@ -30,8 +30,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // ✅ Шинэ бараа нэмэх
-router.post('/', upload.array('images', 5), createItem);
-
+router.post('/', [upload.array('images', 5), protect], createItem);
 // ✅ Бүх барааг авах
 router.get('/', getAllItems);
 

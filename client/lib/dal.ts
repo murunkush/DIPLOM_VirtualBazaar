@@ -7,9 +7,18 @@ import { decrypt } from './session'
 
 export type User = {
   id: string
-  name: string
+  username: string
   email: string
   isAdmin: boolean
+}
+
+export type Item = {
+  id: string
+  name: string
+  description: string
+  price: number
+  images: File[]
+  game: string
 }
 
 export const verifySession = cache(async () => {
@@ -41,3 +50,4 @@ export const getUser = cache(async () => {
   const user: User = await res.json()
   return user
 })
+
