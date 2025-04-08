@@ -1,5 +1,5 @@
 // paymentController.js
-const Payment = require('../models/payment'); // payment модель хамааруулж байна
+const Payment = require('../models/Payment'); // payment модель хамааруулж байна
 
 // Төлбөр үүсгэх
 exports.createPayment = async (req, res) => {
