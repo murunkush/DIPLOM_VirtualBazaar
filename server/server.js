@@ -11,6 +11,7 @@ const escrowRoutes = require('./routes/escrowRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const disputeRoutes = require('./routes/disputeRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const audit = require('express-requests-logger');
 
 // Load environment variables
 dotenv.config();
@@ -20,6 +21,27 @@ const app = express(); // Body-той мэдээ авахын тулд
 
 // Middleware to parse incoming JSON requests
 app.use(express.json());
+app.use(audit({
+    excludeURLs: ['health', 'metrics'], // Exclude paths which enclude 'health' & 'metrics'
+    request: {
+        maskBody: ['password'], // Mask 'password' field in incoming requests
+        excludeHeaders: ['authorization'], // Exclude 'authorization' header from requests
+        excludeBody: ['creditCard'], // Exclude 'creditCard' field from requests body
+        maskHeaders: ['header1'], // Mask 'header1' header in incoming requests
+        maxBodyLength: 50 // limit length to 50 chars + '...'
+    },
+    response: {
+        maskBody: ['session_token'], // Mask 'session_token' field in response body
+        excludeHeaders: ['*'], // Exclude all headers from responses,
+        excludeBody: ['*'], // Exclude all body from responses
+        maskHeaders: ['header1'], // Mask 'header1' header in incoming requests
+        maxBodyLength: 50 // limit length to 50 chars + '...'
+    },
+    shouldSkipAuditFunc: function(req, res){
+        // Custom logic here.. i.e: return res.statusCode === 200
+        return false;
+    }
+}));
 
 // MongoDB connection
 const uri = process.env.MONGODB_URI;
