@@ -1,4 +1,5 @@
 const express = require('express');
+const multer = require('multer');  // Multer-ийг импортолсон
 const {
   createItem,
   getAllItems,
@@ -14,8 +15,22 @@ const { protect, protectAdmin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+// Multer storage config
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');  // Файл хадгалах газар
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + '-' + file.originalname);  // Уникаль нэртэйгээр хадгална
+  }
+});
+
+// `upload` объект үүсгэж Multer тохиргоог хэрэгжүүлсэн
+const upload = multer({ storage });
+
 // ✅ Шинэ бараа нэмэх
-router.post('/', protect, createItem);
+router.post('/', upload.array('images', 5), createItem);
 
 // ✅ Бүх барааг авах
 router.get('/', getAllItems);
