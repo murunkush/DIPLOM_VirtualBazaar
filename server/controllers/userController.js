@@ -23,6 +23,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     if (userExists) {
         res.status(400);
+        res.json({ message: 'Бүртгэлтэй email байна' });
         throw new Error('Бүртгэлтэй email байна');
     }
 
@@ -60,6 +61,7 @@ const loginUser = asyncHandler(async (req, res) => {
         });
     } else {
         res.status(401);
+        res.json({ message: 'Нэвтрэх нэр эсвэл нууц үг буруу байна' });
         throw new Error('Нэвтрэх нэр эсвэл нууц үг буруу');
     }
 });
