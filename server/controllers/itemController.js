@@ -14,7 +14,8 @@ const createItem = asyncHandler(async (req, res) => {
   const seller = req.user._id;
 
   // Зурагнуудаас массив үүсгэх
-  const imageUrls = req.files?.map(file => file.path) || ['']; // Multer-аас imageUrls үүсгэж авах
+  console.log('req.files:', req.file);
+  const imageUrls = [req.file.path]; // Multer-аас imageUrls үүсгэж авах
 
   try {
     const item = await Item.create({

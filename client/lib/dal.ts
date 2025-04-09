@@ -19,6 +19,7 @@ export type Item = {
   price: number
   images: File[]
   game: string
+  imageUrls: string[]
 }
 
 export const verifySession = cache(async () => {
@@ -51,3 +52,22 @@ export const getUser = cache(async () => {
   return user
 })
 
+export const getItems = cache(async () => {
+  const session = await verifySession()
+
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/items`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.token}`,
+    },
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    throw new Error('Items татаж чадсангүй.')
+  }
+
+  const items: Item[] = await res.json()
+  return items
+})

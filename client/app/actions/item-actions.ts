@@ -17,8 +17,10 @@ export const addItem = async (item: FormData) => {
     price: parseInt(item.get('price') as string),
     category: item.get('category'),
     game: item.get('game'),
-    images: [item.get('images')],
+    images: [item.get('images')] as File[],
   }
+
+
   const validatedFields = itemSchema.safeParse(formData)
 
   if (!validatedFields.success) {
@@ -29,13 +31,14 @@ export const addItem = async (item: FormData) => {
     }
   }
 
+  console.log(item)
+
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/items`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
       Authorization: `Bearer ${session.token}`,
     },
-    body: JSON.stringify(validatedFields.data),
+    body: item,
   })
 
   const data = await res.json()
