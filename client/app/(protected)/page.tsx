@@ -11,13 +11,15 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import BackgroundPaths from "@/components/BackgroundPaths";
 
 export default async function MainPage() {
   const items = await getItems();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-300 py-10 px-6 sm:px-8 lg:px-12">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 to-slate-300">
       {/* Add top padding so header isn't hidden by navbar */}
+      <BackgroundPaths />
       <div className="pt-20">
         {/* Header */}
         <header className="max-w-7xl mx-auto mb-8">

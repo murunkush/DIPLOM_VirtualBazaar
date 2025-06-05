@@ -12,7 +12,7 @@ export default function AddItemPage() {
       {/* Background Paths компонент */}
       <BackgroundPaths />
 
-      <div className="max-w-3xl mx-auto space-y-8 relative z-10">
+      <div className="max-w-3xl mx-auto space-y-8 flex flex-col my-10 justify-center relative z-10">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
             Шинэ бараа бүртгэх
