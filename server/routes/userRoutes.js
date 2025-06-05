@@ -1,33 +1,28 @@
-//userRoutes.js source code
 const express = require('express');
-const { 
-  registerUser, 
-  loginUser, 
-  getUserProfile, 
-  updateUser, 
-  changePassword, 
-  deleteUser 
+const router  = express.Router();
+const {
+  registerUser,
+  loginUser,
+  getUserProfile,
+  updateUserProfile,
+  changePassword,
+  deleteUser
 } = require('../controllers/userController');
-
 const { protect, protectAdmin } = require('../middleware/authMiddleware');
-const router = express.Router();
 
-// ✅ Хэрэглэгч бүртгэх
+// Бүртгэл, нэвтрэх
 router.post('/register', registerUser);
+router.post('/login',    loginUser);
 
-// ✅ Хэрэглэгч нэвтрэх
-router.post('/login', loginUser);
+// Профайл, өөрчлөлт, нууц үг
+router
+  .route('/profile')
+  .get(protect, getUserProfile)
+  .put(protect, updateUserProfile);
 
-// ✅ Хэрэглэгчийн профайл авах
-router.get('/profile', protect, getUserProfile);
-
-// ✅ Хэрэглэгчийн мэдээлэл шинэчлэх
-router.put('/update', protect, updateUser);
-
-// ✅ Нууц үг солих
 router.put('/change-password', protect, changePassword);
 
-// ✅ Хэрэглэгч устгах (Зөвхөн админ)
-router.delete('/delete/:id', protect, protectAdmin, deleteUser);
+// Админ хэрэглэгч устгах
+router.delete('/:id', protect, protectAdmin, deleteUser);
 
 module.exports = router;

@@ -1,146 +1,167 @@
-//userController.js source code
-
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const jwt    = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
-const User = require('../models/User');
+const User   = require('../models/User');
 
-// JWT үүсгэх функц
-const generateToken = (id, isAdmin) => {
-    return jwt.sign({ id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '30d' });
+// JWT үүсгэх
+const generateToken = (id, role) => {
+  return jwt.sign({ id, role }, process.env.JWT_SECRET, {
+    expiresIn: '30d'
+  });
 };
 
-// 1️⃣ Хэрэглэгч бүртгүүлэх
-const registerUser = asyncHandler(async (req, res) => {
-    const { username, email, password } = req.body;
+// 1️⃣ Бүртгүүлэх
+exports.registerUser = asyncHandler(async (req, res) => {
+  const { username, email, password } = req.body;
+  if (!username || !email || !password) {
+    res.status(400);
+    throw new Error('Бүх талбарыг бөглөнө үү');
+  }
 
-    if (!username || !email || !password) {
-        res.status(400);
-        throw new Error('Бүх талбарыг бөглөнө үү');
-    }
+  // email формат шалгах
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    res.status(400);
+    throw new Error('Зөв email хаяг оруулна уу');
+  }
 
-    const userExists = await User.findOne({ email });
+  const exists = await User.findOne({ email });
+  if (exists) {
+    res.status(400);
+    throw new Error('Энэ email-ээр бүртгэлтэй хэрэглэгч байна');
+  }
 
-    if (userExists) {
-        res.status(400);
-        res.json({ message: 'Бүртгэлтэй email байна' });
-        throw new Error('Бүртгэлтэй email байна');
-    }
+  const passwordHash = await bcrypt.hash(password, 10);
+  const user = await User.create({
+    username,
+    email,
+    passwordHash
+  });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = await User.create({
-        username,
-        email,
-        password: hashedPassword,
-        isAdmin: false, // Анхдагч байдлаар admin биш
-    });
-
-    res.status(201).json({
-        _id: newUser._id,
-        username: newUser.username,
-        email: newUser.email,
-        isAdmin: newUser.isAdmin,
-        token: generateToken(newUser._id, newUser.isAdmin),
-    });
+  res.status(201).json({
+    _id: user._id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    isAdmin: user.isAdmin,
+    token: generateToken(user._id, user.role)
+  });
 });
 
-// 2️⃣ Хэрэглэгч нэвтрэх
-const loginUser = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
+// 2️⃣ Нэвтрэх
+exports.loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  console.log(email, password);
+  const user = await User.findOne({ email });
+  console.log(user);
+  if (!user) {
+    res.status(401);
+    throw new Error('Нэвтрэх нэр эсвэл нууц үг буруу байна');
+  }
 
-    const user = await User.findOne({ email });
+  const match = await bcrypt.compare(password, user.passwordHash);
+  if (!match) {
+    res.status(401);
+    throw new Error('Нэвтрэх нэр эсвэл нууц үг буруу байна');
+  }
 
-    if (user && (await bcrypt.compare(password, user.password))) {
-        res.json({
-            _id: user._id,
-            username: user.username,
-            email: user.email,
-            isAdmin: user.isAdmin,
-            token: generateToken(user._id, user.isAdmin),
-        });
-    } else {
-        res.status(401);
-        res.json({ message: 'Нэвтрэх нэр эсвэл нууц үг буруу байна' });
-        throw new Error('Нэвтрэх нэр эсвэл нууц үг буруу');
-    }
+  res.json({
+    _id: user._id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    isAdmin: user.isAdmin,
+    token: generateToken(user._id, user.role)
+  });
 });
 
-// 3️⃣ Хэрэглэгчийн профайл авах
-const getUserProfile = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user.id);
-
-    if (user) {
-        res.json({
-            _id: user._id,
-            username: user.username,
-            email: user.email,
-            isAdmin: user.isAdmin,
-        });
-    } else {
-        res.status(404);
-        throw new Error('Хэрэглэгч олдсонгүй');
-    }
+// 3️⃣ Профайл авах
+exports.getUserProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    res.status(404);
+    throw new Error('Хэрэглэгч олдсонгүй');
+  }
+  res.json({
+    _id: user._id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    isAdmin: user.isAdmin
+  });
 });
 
-// 4️⃣ Хэрэглэгчийн мэдээлэл шинэчлэх
-const updateUser = asyncHandler(async (req, res) => {
-    const { username, email } = req.body;
-    const user = await User.findById(req.user.id);
+// 4️⃣ Профайл засах
+exports.updateUserProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    res.status(404);
+    throw new Error('Хэрэглэгч олдсонгүй');
+  }
 
-    if (!user) {
-        res.status(404);
-        throw new Error('Хэрэглэгч олдсонгүй');
+  const { username, email } = req.body;
+  if (email && email !== user.email) {
+    // шинэ email давхцал шалгах
+    const exists = await User.findOne({ email });
+    if (exists) {
+      res.status(400);
+      throw new Error('Энэ email-ээр бүртгэлтэй хэрэглэгч байна');
     }
+    // формат шалгах
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      res.status(400);
+      throw new Error('Зөв email хаяг оруулна уу');
+    }
+    user.email = email;
+  }
+  if (username) user.username = username;
 
-    user.username = username || user.username;
-    user.email = email || user.email;
-
-    const updatedUser = await user.save();
-
-    res.json({
-        _id: updatedUser._id,
-        username: updatedUser.username,
-        email: updatedUser.email,
-        isAdmin: updatedUser.isAdmin,
-        token: generateToken(updatedUser._id, updatedUser.isAdmin),
-    });
+  const updated = await user.save();
+  res.json({
+    _id: updated._id,
+    username: updated.username,
+    email: updated.email,
+    role: updated.role,
+    isAdmin: updated.isAdmin,
+    token: generateToken(updated._id, updated.role)
+  });
 });
 
 // 5️⃣ Нууц үг солих
-const changePassword = asyncHandler(async (req, res) => {
-    const { currentPassword, newPassword } = req.body;
+exports.changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    res.status(404);
+    throw new Error('Хэрэглэгч олдсонгүй');
+  }
 
-    const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
-    if (!passwordRegex.test(newPassword)) {
-        res.status(400);
-        throw new Error('Шинэ нууц үг нь хамгийн багадаа 8 тэмдэгттэй, дээд үсэг, доод үсэг, тоо агуулсан байх ёстой');
-    }
+  const match = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!match) {
+    res.status(400);
+    throw new Error('Одоогийн нууц үг буруу байна');
+  }
 
-    const user = await User.findById(req.user.id);
+  // шинэ нууц үгийн шалгалт
+  const pwdRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
+  if (!pwdRegex.test(newPassword)) {
+    res.status(400);
+    throw new Error('Нууц үг нь дор хаяж 8 тэмдэгт, дээд/доод үсэг, тоо агуулсан байх ёстой');
+  }
 
-    if (user && (await bcrypt.compare(currentPassword, user.password))) {
-        user.password = await bcrypt.hash(newPassword, 10);
-        await user.save();
-
-        res.json({ message: 'Нууц үг амжилттай шинэчлэгдлээ' });
-    } else {
-        res.status(400);
-        throw new Error('Одоогийн нууц үг буруу байна');
-    }
+  user.passwordHash = await bcrypt.hash(newPassword, 10);
+  await user.save();
+  res.json({ message: 'Нууц үг амжилттай солигдлоо' });
 });
 
-// 6️⃣ Хэрэглэгч устгах (Зөвхөн админ эрхтэй хэрэглэгч устгах боломжтой)
-const deleteUser = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.params.id);
-
-    if (user) {
-        await user.deleteOne();
-        res.json({ message: 'Хэрэглэгч амжилттай устгагдлаа' });
-    } else {
-        res.status(404);
-        throw new Error('Хэрэглэгч олдсонгүй');
-    }
+// 6️⃣ Хэрэглэгч устгах (зөвхөн админ)
+exports.deleteUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    res.status(404);
+    throw new Error('Хэрэглэгч олдсонгүй');
+  }
+  await user.deleteOne();
+  res.json({ message: 'Хэрэглэгч амжилттай устгагдлаа' });
 });
-
-module.exports = { registerUser, loginUser, getUserProfile, updateUser, changePassword, deleteUser };

@@ -1,0 +1,48 @@
+/* @keyframes болон animation тохиргоог энд хийх */
+@keyframes neon {
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 1000px 1000px;
+    }
+  }
+  
+  /* Хэрэглэх стилийн тохиргоо */
+  .animate-neon-lines {
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(0, 255, 255, 0.1) 0px,
+      rgba(0, 255, 255, 0.1) 2px,
+      transparent 2px,
+      transparent 10px
+    );
+    animation: neon 60s linear infinite;
+    background-size: 200% 200%;
+  }
+  
+  .neon-lines {
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    background: repeating-linear-gradient(
+      180deg,
+      rgba(0, 255, 255, 0.1),
+      rgba(0, 255, 255, 0.1) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+    animation: neonScroll 10s linear infinite;
+    transform: rotate(15deg);
+    opacity: 0.2;
+  }
+  
+  @keyframes neonScroll {
+    from {
+      transform: translateY(0) rotate(15deg);
+    }
+    to {
+      transform: translateY(-100%) rotate(15deg);
+    }
+  }
+  

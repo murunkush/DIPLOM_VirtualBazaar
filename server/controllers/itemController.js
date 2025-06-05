@@ -1,32 +1,39 @@
+// itemController.js
+
 const asyncHandler = require('express-async-handler');
 const Item = require('../models/itemModel');
+const User = require('../models/User');
 
 // ✅ Шинэ бараа нэмэх
 const createItem = asyncHandler(async (req, res) => {
   const { name, description, price, game } = req.body;
 
+  // Хэрэв шаардлагатай талбарууд хоосон байвал алдаа өгнө
   if (!name || !game || !price) {
     res.status(400);
     res.json({ message: 'Бүх талбарыг бөглөнө үү' });
     throw new Error('Бүх талбарыг бөглөнө үү');
   }
 
-  const seller = req.user._id;
+  // Хэрэглэгчийн id авах (auth middleware-ын дараа)
+  const seller = req.user._id; // req.user-г auth middleware-аар нэвтрүүлсэн байх ёстой
 
   // Зурагнуудаас массив үүсгэх
-  console.log('req.files:', req.file);
-  const imageUrls = [req.file.path]; // Multer-аас imageUrls үүсгэж авах
+  console.log('req.files:', req.files);  // req.files-ыг шалгаарай
+  const imageUrls = req.files ? req.files.map(file => file.path) : []; // Олон зураг авах
 
   try {
+    // Бараа үүсгэх
     const item = await Item.create({
       name,
       description,
       price,
       game,
-      seller,
-      imageUrls,  // Зурагнуудыг хадгалах
+      seller,  // seller-ийг хэрэглэгчийн _id-аар нэмэх
+      imageUrls,  // Олон зургийн замыг хадгалах
     });
 
+    // Барааг амжилттай үүсгэсний дараа
     res.status(201).json(item);
   } catch (error) {
     res.status(400).json({ message: 'Бараа үүсгэхэд алдаа гарлаа', error: error.message });
@@ -36,28 +43,29 @@ const createItem = asyncHandler(async (req, res) => {
 // ✅ Бүх барааг авах
 const getAllItems = asyncHandler(async (req, res) => {
   try {
-    const items = await Item.find();
-    if (!items.length) {
-      return res.status(404).json({ message: 'Бараа олдсонгүй' });
-    }
+    const items = await Item.find().populate('seller', 'username email');
     res.status(200).json(items);
   } catch (error) {
-    res.status(500).json({ message: 'Алдаа гарлаа', error: error.message });
+    res.status(500).json({ message: 'Бүх барааг авахад алдаа гарлаа', error: error.message });
   }
 });
 
 // ✅ Нэг барааны мэдээлэл авах
-const getItemById = asyncHandler(async (req, res) => {
+const getItemById = async (req, res) => {
   try {
-    const item = await Item.findById(req.params.id);
-    if (!item) {
-      return res.status(404).json({ message: 'Бараа олдсонгүй' });
-    }
-    res.status(200).json(item);
-  } catch (error) {
-    res.status(500).json({ message: 'Алдаа гарлаа', error: error.message });
+    const item = await Item.findById(req.params.id)
+    .populate('seller', 'username email')
+    .exec();
+  
+  if (!item || !item.seller) {
+    return res.status(404).json({ message: 'Бараа эсвэл борлуулагч олдсонгүй' });
   }
-});
+
+    res.status(200).json(item);
+  } catch (err) {
+    res.status(500).json({ message: 'Алдаа гарлаа', error: err.message });
+  }
+};
 
 // ✅ Барааны мэдээлэл шинэчлэх
 const updateItem = asyncHandler(async (req, res) => {

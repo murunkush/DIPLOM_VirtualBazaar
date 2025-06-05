@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const User = require('./models/User'); // Загвараа зөв импортлоорой
+const User = require('./models/User');
 
 mongoose.connect('mongodb+srv://munkhbaatarmurun:qenS49JgPOJytCKi@virtual-bazaar.pwbqt.mongodb.net/?retryWrites=true&w=majority&appName=virtual-bazaar', {
     useNewUrlParser: true,
@@ -23,4 +23,4 @@ const makeAdmin = async (email) => {
     }
 };
 
-makeAdmin('admin@example.com'); // Энд өөрийн хүссэн хэрэглэгчийн email-ийг бичнэ
+makeAdmin('ADMINN@gmail.com'); // Энд өөрийн хүссэн хэрэглэгчийн email-ийг бичнэ

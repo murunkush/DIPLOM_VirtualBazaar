@@ -56,6 +56,8 @@ export async function loginAction(
     );
 
     const data = await response.json();
+    console.log('tokne', data)
+
 
     if (!response.ok) {
       return {
@@ -68,6 +70,7 @@ export async function loginAction(
         success: false,
       };
     }
+
 
     const cookieStore = await cookies();
     cookieStore.set("session", data.token, {

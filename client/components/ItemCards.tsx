@@ -1,52 +1,88 @@
-"use client"
+"use client";
 
-import type React from "react"
-import Image from "next/image"
-import { AspectRatio } from "@/components/ui/aspect-ratio"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { CircleDollarSign } from "lucide-react"
+import React, { useState } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Heart } from "lucide-react";
+import { toast } from "sonner";
 
-type ItemCardProps = {
-  id: string
-  name: string
-  description: string
-  price: number
-  images: string[]
-}
+export type ItemCardProps = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  images: string[];
+};
 
-export const ItemCard: React.FC<ItemCardProps> = ({ id, name, description, price, images }) => {
-  const imageUrl =
-    images && images.length > 0
-      ? `${process.env.NEXT_PUBLIC_API_URL}/${images[0]}`
-      : "https://via.placeholder.com/300x200?text=No+Image"
+export const ItemCard: React.FC<ItemCardProps> = ({
+  id,
+  name,
+  description,
+  price,
+  images,
+}) => {
+  const router = useRouter();
+  const [liked, setLiked] = useState(false);
+
+  const imageUrl = images?.[0]
+    ? `${process.env.NEXT_PUBLIC_API_URL}/${images[0]}`
+    : "/no-image.png";
+
+  const handleLike = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLiked((prev) => !prev);
+    toast(liked ? "Wishlist-с хасагдлаа" : "Wishlist-д нэмэгдлээ");
+  };
 
   return (
-    <Card key={id} className="overflow-hidden max-w-[280px] bg-white gap-3 border-gray-200 shadow-sm relative">
-      {/* Ocean blue gradient border on top */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
-
-      <div className="relative">
-        <AspectRatio ratio={16 / 9}>
+    <Card
+      onClick={() => router.push(`/item/${id}`)}
+      className="h-full flex flex-col backdrop-blur-sm bg-white/10 border border-white/20 rounded-2xl overflow-hidden shadow-md transition-transform duration-300 hover:scale-105 hover:shadow-xl cursor-pointer"
+    >
+      <div className="relative w-full h-48">
+        <AspectRatio ratio={4 / 3}>
           <Image
-            src={imageUrl || "/placeholder.svg"}
+            src={imageUrl}
             alt={name}
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 100vw, 280px"
+            sizes="(max-width: 768px) 100vw, 300px"
           />
-          <div className="absolute inset-0 p-3 flex flex-col justify-between bg-gradient-to-t from-black/70 to-transparent">
-          <div className="text-right"><span className="inline-block bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white text-sm font-semibold px-3 py-0.5 rounded-full shadow-md hover:scale-105 transition-transform duration-300 animate-pulse">{price.toLocaleString()}₮</span></div>
-
-            <div className="mt-auto">
-              <h3 className="font-bold text-lg text-[#e4f1a9] uppercase">{name}</h3>
-            </div>
-          </div>
         </AspectRatio>
+        <button
+          onClick={handleLike}
+          className="absolute top-3 right-3 p-1 bg-white/80 rounded-full backdrop-blur-sm hover:bg-white"
+        >
+          <Heart
+            className={`w-5 h-5 ${liked ? "text-pink-500" : "text-gray-600"}`}  
+          />
+        </button>
       </div>
 
-      <CardContent className="px-3 py-0 flex items-center gap-2">
-        <span className="font-medium text-gray-800">{description}</span>
+      <CardContent className="p-4 flex-1 flex flex-col justify-between">
+        <div>
+          <h3
+            className="text-lg font-semibold text-gray-900 truncate"
+            title={name}
+          >
+            {name}
+          </h3>
+          <p
+            className="mt-1 text-sm text-gray-600 line-clamp-2"
+            title={description || "Тайлбаргүй"}
+          >
+            {description || "Тайлбаргүй"}
+          </p>
+        </div>
       </CardContent>
+
+      <CardFooter className="p-4 pt-2 flex items-center justify-between border-t border-white/20">
+        <span className="text-lg font-bold text-gray-900">
+          {price.toLocaleString()}₮
+        </span>
+      </CardFooter>
     </Card>
-  )
-}
+  );
+};

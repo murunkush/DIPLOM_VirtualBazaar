@@ -119,4 +119,32 @@
   body {
     @apply bg-background text-foreground;
   }
+  button, .button-neon {
+    @apply bg-transparent text-primary-foreground border-2 border-primary rounded-lg py-2 px-4 transition-all duration-300 ease-in-out;
+  }
+  button:hover, .button-neon:hover {
+    @apply bg-primary text-background shadow-lg shadow-primary/50;
+  }
+  a {
+    @apply text-primary-foreground transition-all duration-300 ease-in-out;
+  }
+  a:hover {
+    @apply text-primary underline;
+  }
+
+  .neon-text {
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.8), 0 0 20px rgba(255, 0, 255, 0.6), 0 0 30px rgba(255, 0, 255, 0.4);
+  }
+
+  .neon-box {
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.8), 0 0 30px rgba(255, 0, 255, 0.6), 0 0 45px rgba(255, 0, 255, 0.4);
+  }
+
+  .glass-card {
+    @apply bg-white/10 backdrop-blur-sm rounded-lg border border-white/20;
+  }
+
+  .glass-button {
+    @apply bg-transparent border-2 border-primary text-primary-foreground rounded-lg py-2 px-4 transition-all duration-300 ease-in-out;
+  }
 }

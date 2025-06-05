@@ -1,11 +1,21 @@
-const express = require('express');
-const router = express.Router();
-const { createEscrow, releaseEscrow } = require('../controllers/escrowController');
+const express = require('express')
+const { protect, protectAdmin } = require('../middleware/authMiddleware')
+const {
+  createEscrow,
+  confirmEscrow,
+  completeEscrow,
+  disputeEscrow
+} = require('../controllers/escrowController')
 
-// Эскроу үүсгэх
-router.post('/', createEscrow);
+const router = express.Router()
 
-// Эскроу-ыг чөлөөлөх
-router.post('/release', releaseEscrow);
+// Buyer үүсгэх
+router.post(   '/',         protect, createEscrow)
+// Admin баталгаажуулах
+router.put(    '/:id',      protectAdmin, confirmEscrow)
+// Buyer гүйцэтгэх
+router.put(    '/:id/complete', protect, completeEscrow)
+// Buyer маргаан үүсгэх
+router.post(   '/:id/dispute',   protect, disputeEscrow)
 
-module.exports = router;
+module.exports = router

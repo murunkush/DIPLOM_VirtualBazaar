@@ -1,121 +1,246 @@
+const asyncHandler = require('express-async-handler');
 const Order = require('../models/orderModel');
 
-//  Захиалга үүсгэх
-const createOrder = async (req, res) => {
-  try {
-    const { seller, item, price } = req.body;
-    const buyer = req.user.id; // Token-аас buyer-г авах
+// 1️⃣ Create Order
+const createOrder = asyncHandler(async (req, res) => {
+  const { seller, item, price } = req.body;
+  const buyer = req.user.id;
+  const newOrder = new Order({ buyer, seller, item, price });
+  const created = await newOrder.save();
+  res.status(201).json({ message: 'Order created', order: created });
+});
 
-    const newOrder = new Order({ buyer, seller, item, price });
-    await newOrder.save();
+// 2️⃣ Get Orders
+const getOrders = asyncHandler(async (req, res) => {
+  const { id: userId, role } = req.user;
+  const filter = role === 'admin'
+    ? {}
+    : { $or: [{ buyer: userId }, { seller: userId }] };
+  const orders = await Order.find(filter)
+    .populate('buyer',  'username email')
+    .populate('seller', 'username email')
+    .populate('item');
+  res.json(orders);
+});
 
-    res.status(201).json({ message: 'Захиалга амжилттай үүсгэлээ', order: newOrder });
-  } catch (error) {
-    res.status(400).json({ message: 'Захиалга үүсгэхэд алдаа гарлаа', error });
+// 3️⃣ Get Order By ID
+const getOrderById = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id)
+    .populate('buyer',  'username email')
+    .populate('seller', 'username email')
+    .populate('item');
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
   }
-};
-
-// Тухайн ID-тай захиалгыг авах
-const getOrderById = async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id).populate('buyer seller item');
-    
-    if (!order) {
-      return res.status(404).json({ message: 'Захиалга олдсонгүй' });
-    }
-
-    // Захиалга зөвхөн хэрэглэгчийнх эсвэл админы хувьд авах
-    if (order.buyer.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Танд энэ захиалгыг үзэх эрх байхгүй' });
-    }
-
-    res.status(200).json(order);
-  } catch (error) {
-    res.status(400).json({ message: 'Захиалга авахад алдаа гарлаа', error });
+  const { id: userId, role } = req.user;
+  if (role !== 'admin' &&
+      order.buyer._id.toString() !== userId &&
+      order.seller._id.toString() !== userId) {
+    res.status(403);
+    throw new Error('No permission');
   }
-};
+  res.json(order);
+});
 
-// Бүх захиалгуудыг авах (Админ)
-const getAllOrders = async (req, res) => {
-  try {
-    const orders = await Order.find().populate('buyer seller item');
-    res.status(200).json(orders);
-  } catch (error) {
-    res.status(500).json({ message: 'Захиалгуудыг авахад алдаа гарлаа', error });
+// 4️⃣ Update Status
+const updateOrderStatus = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
   }
-};
+  const { id: userId, role } = req.user;
+  const { status: newStatus, note } = req.body;
 
-//  Захиалгын төлөв шинэчлэх
-const updateOrderStatus = async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    
-    if (!order) {
-      return res.status(404).json({ message: 'Захиалга олдсонгүй' });
-    }
+  const isBuyer = order.buyer.toString() === userId;
+  const buyerCanPending = newStatus === 'PendingPayment' && isBuyer;
+  const buyerCanPaid    = newStatus === 'Paid'           && isBuyer;
+  const sellerOrAdmin   = order.seller.toString() === userId || role === 'admin';
 
-    if (order.buyer.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Танд энэ захиалгыг шинэчлэх эрх байхгүй' });
-    }
-
-    order.status = req.body.status || order.status;
-    await order.save();
-
-    res.status(200).json({ message: 'Захиалгын төлөв шинэчлэгдлээ', order });
-  } catch (error) {
-    res.status(400).json({ message: 'Захиалгын төлөв шинэчлэхэд алдаа гарлаа', error });
+  if (!buyerCanPending && !buyerCanPaid && !sellerOrAdmin) {
+    res.status(403);
+    throw new Error('No permission');
   }
-};
 
-//  Захиалгыг цуцлах
-const cancelOrder = async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    
-    if (!order) {
-      return res.status(404).json({ message: 'Захиалга олдсонгүй' });
-    }
+  if (!order.logs) order.logs = [];
+  const old = order.status;
+  order.status = newStatus;
+  order.logs.push({
+    actor: userId,
+    from:  old,
+    to:    newStatus,
+    note:  note || ''
+  });
 
-    if (order.buyer.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Танд энэ захиалгыг цуцлах эрх байхгүй' });
-    }
+  await order.save();
+  res.json({ message: 'Status updated', order });
+});
 
-    order.status = 'Cancelled';
-    await order.save();
-
-    res.status(200).json({ message: 'Захиалга цуцлагдлаа', order });
-  } catch (error) {
-    res.status(400).json({ message: 'Захиалгыг цуцлахад алдаа гарлаа', error });
+// 5️⃣ Cancel Order
+const cancelOrder = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
   }
-};
-
-//  Захиалга амжилттай дууссан гэж баталгаажуулах
-const confirmDelivery = async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    
-    if (!order) {
-      return res.status(404).json({ message: 'Захиалга олдсонгүй' });
-    }
-
-    if (order.buyer.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Танд энэ захиалгыг баталгаажуулах эрх байхгүй' });
-    }
-
-    order.status = 'Completed';
-    await order.save();
-
-    res.status(200).json({ message: 'Захиалга амжилттай дууслаа', order });
-  } catch (error) {
-    res.status(400).json({ message: 'Захиалга дуусгах үед алдаа гарлаа', error });
+  const { id: userId, role } = req.user;
+  if (order.buyer.toString() !== userId && role !== 'admin') {
+    res.status(403);
+    throw new Error('No permission');
   }
-};
+  const old = order.status;
+  order.status = 'Cancelled';
+  order.logs.push({ actor: userId, from: old, to: 'Cancelled', note: 'Order cancelled' });
+  await order.save();
+  res.json({ message: 'Order cancelled', order });
+});
+
+// 6️⃣ Confirm Delivery (Verified)
+const confirmDelivery = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+  const { id: userId, role } = req.user;
+  if (order.buyer.toString() !== userId && role !== 'admin') {
+    res.status(403);
+    throw new Error('No permission');
+  }
+  const old = order.status;
+  order.status = 'Verified';
+  order.logs.push({ actor: userId, from: old, to: 'Verified', note: 'Delivery verified' });
+  await order.save();
+  res.json({ message: 'Delivery confirmed', order });
+});
+
+// 🔸 Deliver Order (Seller sets deliveryInfo)
+const deliverOrder = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+  const { id: userId, role } = req.user;
+  if (order.seller.toString() !== userId && role !== 'admin') {
+    res.status(403);
+    throw new Error('No permission to deliver');
+  }
+  const { deliveryInfo } = req.body;
+  if (!deliveryInfo) {
+    res.status(400);
+    throw new Error('Delivery info required');
+  }
+  const old = order.status;
+  order.deliveryInfo = deliveryInfo;
+  order.status = 'Delivered';
+  order.logs.push({ actor: userId, from: old, to: 'Delivered', note: deliveryInfo });
+  const updated = await order.save();
+  res.json({ message: 'Delivery info saved', order: updated });
+});
+
+// 7️⃣ Delete Cancelled
+const deleteCancelledOrder = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+  const { id: userId, role } = req.user;
+  if (order.buyer.toString() !== userId &&
+      order.seller.toString() !== userId &&
+      role !== 'admin') {
+    res.status(403);
+    throw new Error('No permission');
+  }
+  if (order.status !== 'Cancelled') {
+    res.status(400);
+    throw new Error('Only cancelled orders can be deleted');
+  }
+  await Order.findByIdAndDelete(req.params.id);
+  res.json({ message: 'Order deleted' });
+});
+
+// 8️⃣ Move to Escrow
+const moveToEscrow = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+  const { id: userId, role } = req.user;
+  if (![order.buyer.toString(), order.seller.toString()].includes(userId) && role !== 'admin') {
+    res.status(403);
+    throw new Error('No permission');
+  }
+  if (order.status !== 'Paid') {
+    res.status(400);
+    throw new Error('Must be Paid first');
+  }
+  const old = order.status;
+  order.status = 'EscrowPending';
+  order.logs.push({ actor: userId, from: old, to: 'EscrowPending', note: 'Moved to escrow' });
+  await order.save();
+  res.json({ message: 'Moved to escrow', order });
+});
+
+// 9️⃣ Confirm Escrow Payment
+const confirmEscrowPayment = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+  const { id: userId, role } = req.user;
+  if (order.seller.toString() !== userId && role !== 'admin') {
+    res.status(403);
+    throw new Error('No permission');
+  }
+  if (order.status !== 'EscrowPending') {
+    res.status(400);
+    throw new Error('Must be in EscrowPending');
+  }
+  const old = order.status;
+  order.status = 'EscrowConfirmed';
+  order.logs.push({ actor: userId, from: old, to: 'EscrowConfirmed', note: 'Escrow confirmed' });
+  await order.save();
+  res.json({ message: 'Escrow confirmed', order });
+});
+
+// 🔟 Buyer Confirm Escrow Completion
+const buyerConfirmEscrowCompletion = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+  const { id: userId, role } = req.user;
+  if (order.buyer.toString() !== userId && role !== 'admin') {
+    res.status(403);
+    throw new Error('No permission');
+  }
+  if (order.status !== 'EscrowConfirmed') {
+    res.status(400);
+    throw new Error('Must be EscrowConfirmed');
+  }
+  const old = order.status;
+  order.status = 'EscrowCompleted';
+  order.logs.push({ actor: userId, from: old, to: 'EscrowCompleted', note: 'Escrow completed' });
+  await order.save();
+  res.json({ message: 'Escrow completed', order });
+});
 
 module.exports = {
   createOrder,
+  getOrders,
   getOrderById,
-  getAllOrders,
   updateOrderStatus,
   cancelOrder,
   confirmDelivery,
+  deliverOrder,
+  deleteCancelledOrder,
+  moveToEscrow,
+  confirmEscrowPayment,
+  buyerConfirmEscrowCompletion
 };

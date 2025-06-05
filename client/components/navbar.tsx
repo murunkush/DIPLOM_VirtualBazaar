@@ -1,178 +1,95 @@
-"use client"
-import { useRouter } from "next/navigation"
-import { Menu, ShoppingCart, Heart, Package, Plus, User } from "lucide-react"
+"use client";
 
-import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation";
+import { Heart, Package, Plus, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import Image from "next/image"
-import { logoutAction } from "@/app/actions/auth-actions"
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { logoutAction } from "@/app/actions/auth-actions";
+
+const navItems = [
+  { icon: Plus, label: "Add Item", href: "/add-item" },
+  { icon: Package, label: "Orders", href: "/orders" },
+  { icon: Heart, label: "Wishlist", href: "/wishlist" },
+];
 
 type Props = {
   user: {
-    username: string
-    email: string
-  }
-}
+    username: string;
+    email: string;
+  };
+};
 
-const Navbar = ({ user }: Props) => {
-  const router = useRouter()
+export default function Navbar({ user }: Props) {
+  const router = useRouter();
+
+  const handleNavigation = (href: string) => router.push(href);
 
   return (
-    <nav className="w-full bg-[#0A1828] shadow-lg p-4 flex justify-between items-center">
-      <div className="flex items-center gap-4 cursor-pointer" onClick={() => router.push("/")}>
-        <Image src="/logo.png" alt="лого" className="object-contain rounded-full shadow-md" width={70} height={50} />
-        <h1 className="text-3xl font-bold text-white hover:text-[#BFA181] transition-all">VirtualBazaar</h1>
-      </div>
-
-      <div className="hidden md:flex gap-3">
-        <Button
-          onClick={() => router.push("/add-item")}
-          variant="secondary"
-          className="font-semibold bg-[#178582] hover:bg-[#178582]/90 text-white hover:text-white transition-all transform hover:scale-105 border-none"
+    <nav className="fixed top-0 left-0 z-50 w-full bg-white border-b border-gray-200 shadow-sm">
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4 space-x-6">
+        {/* Logo */}
+        <div
+          onClick={() => handleNavigation("/")}
+          className="cursor-pointer text-2xl font-bold text-black"
         >
-          <Plus className="mr-2 h-4 w-4" />
-          Бараа нэмэх
-        </Button>
+          VirtualBazaar
+        </div>
 
-        <Button
-          onClick={() => router.push("/orders")}
-          variant="secondary"
-          className="font-semibold bg-[#178582] hover:bg-[#178582]/90 text-white hover:text-white transition-all transform hover:scale-105 border-none"
-        >
-          <Package className="mr-2 h-4 w-4" />
-          Захиалгууд
-        </Button>
-
-        <Button
-          onClick={() => router.push("/basket")}
-          variant="secondary"
-          className="font-semibold bg-[#178582] hover:bg-[#178582]/90 text-white hover:text-white transition-all transform hover:scale-105 border-none"
-        >
-          <ShoppingCart className="mr-2 h-4 w-4" />
-          Сагс
-        </Button>
-
-        <Button
-          onClick={() => router.push("/wishlist")}
-          variant="secondary"
-          className="font-semibold bg-[#178582] hover:bg-[#178582]/90 text-white hover:text-white transition-all transform hover:scale-105 border-none"
-        >
-          <Heart className="mr-2 h-4 w-4" />
-          Хүслийн жагсаалт
-        </Button>
-      </div>
-
-      <div className="md:hidden">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-[#178582]/20">
-              <Menu className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent className="border-l-[#178582]">
-            <SheetHeader>
-              <SheetTitle className="text-[#0A1828]">VirtualBazaar</SheetTitle>
-            </SheetHeader>
-            <div className="flex flex-col gap-3 mt-6">
-              <Button
-                onClick={() => router.push("/add-item")}
-                variant="outline"
-                className="justify-start border-[#178582] text-[#0A1828] hover:text-[#178582] hover:bg-[#178582]/10"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Бараа нэмэх
-              </Button>
-
-              <Button
-                onClick={() => router.push("/orders")}
-                variant="outline"
-                className="justify-start border-[#178582] text-[#0A1828] hover:text-[#178582] hover:bg-[#178582]/10"
-              >
-                <Package className="mr-2 h-4 w-4" />
-                Захиалгууд
-              </Button>
-
-              <Button
-                onClick={() => router.push("/basket")}
-                variant="outline"
-                className="justify-start border-[#178582] text-[#0A1828] hover:text-[#178582] hover:bg-[#178582]/10"
-              >
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Сагс
-              </Button>
-
-              <Button
-                onClick={() => router.push("/wishlist")}
-                variant="outline"
-                className="justify-start border-[#178582] text-[#0A1828] hover:text-[#178582] hover:bg-[#178582]/10"
-              >
-                <Heart className="mr-2 h-4 w-4" />
-                Хүслийн жагсаалт
-              </Button>
-
-              <Button
-                onClick={() => router.push("/profile")}
-                variant="outline"
-                className="justify-start border-[#178582] text-[#0A1828] hover:text-[#178582] hover:bg-[#178582]/10"
-              >
-                <User className="mr-2 h-4 w-4" />
-                Профайл
-              </Button>
-
-              <Button onClick={async () => await logoutAction()} variant="destructive" className="justify-start mt-4">
-                Гарах
-              </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      <div className="hidden md:block">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 text-white hover:bg-[#178582]/20">
-              <Avatar className="h-8 w-8 border-2 border-[#BFA181]">
-                <AvatarImage src="/avatar.png" alt={user.username} />
-                <AvatarFallback className="bg-[#178582] text-white">{user.username?.at(0)}</AvatarFallback>
-              </Avatar>
-              <span className="font-medium">Профайл</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <div className="flex flex-col items-center p-4">
-              <Avatar className="h-16 w-16 mb-2 border-2 border-[#BFA181]">
-                <AvatarImage src="/avatar.png" alt={user.username} />
-                <AvatarFallback className="bg-[#178582] text-white text-xl">{user.username.at(0)}</AvatarFallback>
-              </Avatar>
-              <p className="text-lg font-semibold text-[#0A1828]">{user.username}</p>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="cursor-pointer text-[#0A1828] hover:text-[#178582] focus:text-[#178582] focus:bg-[#178582]/10"
-              onClick={() => router.push("/profile")}
+        {/* Nav buttons */}
+        <div className="flex items-center space-x-3 ml-auto">
+          {navItems.map((item) => (
+            <Button
+              key={item.href}
+              onClick={() => handleNavigation(item.href)}
+              variant="ghost"
+              className="flex items-center space-x-1 text-black hover:text-teal-600"
             >
-              Профайл харах
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="cursor-pointer text-destructive focus:text-destructive"
-              onClick={async () => await logoutAction()}
-            >
-              Гарах
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <item.icon className="h-5 w-5" />
+              <span className="text-sm font-medium">{item.label}</span>
+            </Button>
+          ))}
+
+          {/* Profile */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center space-x-2 text-black">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="/avatar.png" alt={user.username} />
+                  <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <span className="font-medium">{user.username}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-white rounded-md shadow-lg p-2">
+              <div className="flex flex-col items-center p-4">
+                <Avatar className="h-12 w-12 mb-2">
+                  <AvatarImage src="/avatar.png" alt={user.username} />
+                  <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <p className="font-semibold text-black">{user.username}</p>
+                <p className="text-sm text-gray-600">{user.email}</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleNavigation("/profile")} className="text-black">
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={async () => await logoutAction()}
+              >
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </nav>
-  )
+  );
 }
-
-export default Navbar
